@@ -1,0 +1,58 @@
+[
+  {
+    "Id": 1,
+    "name": "Groceries",
+    "monthlyLimit": 600,
+    "color": "#10B981",
+    "icon": "ShoppingCart"
+  },
+  {
+    "Id": 2,
+    "name": "Transportation",
+    "monthlyLimit": 300,
+    "color": "#3B82F6",
+    "icon": "Car"
+  },
+  {
+    "Id": 3,
+    "name": "Dining Out",
+    "monthlyLimit": 400,
+    "color": "#F59E0B",
+    "icon": "UtensilsCrossed"
+  },
+  {
+    "Id": 4,
+    "name": "Entertainment",
+    "monthlyLimit": 200,
+    "color": "#8B5CF6",
+    "icon": "Sparkles"
+  },
+  {
+    "Id": 5,
+    "name": "Shopping",
+    "monthlyLimit": 500,
+    "color": "#EC4899",
+    "icon": "ShoppingBag"
+  },
+  {
+    "Id": 6,
+    "name": "Healthcare",
+    "monthlyLimit": 250,
+    "color": "#EF4444",
+    "icon": "Heart"
+  },
+  {
+    "Id": 7,
+    "name": "Utilities",
+    "monthlyLimit": 350,
+    "color": "#14B8A6",
+    "icon": "Zap"
+  },
+  {
+    "Id": 8,
+    "name": "Other",
+    "monthlyLimit": 300,
+    "color": "#64748B",
+    "icon": "MoreHorizontal"
+  }
+]

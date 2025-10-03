@@ -1,26 +1,26 @@
-import { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import MonthSelector from "@/components/molecules/MonthSelector";
 import StatCard from "@/components/molecules/StatCard";
-import ExpenseForm from "@/components/organisms/ExpenseForm";
-import BudgetOverview from "@/components/organisms/BudgetOverview";
-import ExpenseList from "@/components/organisms/ExpenseList";
-import SpendingChart from "@/components/organisms/SpendingChart";
-import ComparisonChart from "@/components/organisms/ComparisonChart";
-import Loading from "@/components/ui/Loading";
 import Error from "@/components/ui/Error";
-import categoryService from "@/services/api/categoryService";
-import expenseService from "@/services/api/expenseService";
+import Loading from "@/components/ui/Loading";
+import BudgetOverview from "@/components/organisms/BudgetOverview";
+import ExpenseForm from "@/components/organisms/ExpenseForm";
+import SpendingChart from "@/components/organisms/SpendingChart";
+import ExpenseList from "@/components/organisms/ExpenseList";
+import ComparisonChart from "@/components/organisms/ComparisonChart";
 import { formatCurrency, getMonthKey, getPreviousMonth } from "@/utils/formatters";
-import { motion } from "framer-motion";
+import expenseService from "@/services/api/expenseService";
+import categoryService from "@/services/api/categoryService";
 
 const Dashboard = () => {
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString());
+const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString());
   const [categories, setCategories] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [budgets, setBudgets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
+  const [previousMonthData, setPreviousMonthData] = useState([]);
   const loadData = async () => {
     try {
       setLoading(true);
@@ -117,21 +117,19 @@ const Dashboard = () => {
     return "success";
   };
 
-  const chartData = budgets
+const chartData = budgets
     .filter(b => b.spent > 0)
     .map(b => ({
       label: b.name,
       value: b.spent,
       color: b.color,
     }));
-
   const currentMonthData = budgets.map(b => ({
     categoryId: b.Id,
     spent: b.spent,
   }));
 
   const previousMonthKey = getMonthKey(getPreviousMonth(selectedMonth));
-  const [previousMonthData, setPreviousMonthData] = useState([]);
 
   useEffect(() => {
     const loadPreviousMonth = async () => {
@@ -156,8 +154,7 @@ const Dashboard = () => {
     if (categories.length > 0) {
       loadPreviousMonth();
     }
-  }, [selectedMonth, categories]);
-
+  }, [selectedMonth, categories, previousMonthKey]);
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto p-6 space-y-6">

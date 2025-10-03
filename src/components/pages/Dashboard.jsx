@@ -9,23 +9,39 @@ import ExpenseForm from "@/components/organisms/ExpenseForm";
 import SpendingChart from "@/components/organisms/SpendingChart";
 import ExpenseList from "@/components/organisms/ExpenseList";
 import ComparisonChart from "@/components/organisms/ComparisonChart";
-import { formatCurrency, getMonthKey, getPreviousMonth } from "@/utils/formatters";
+import { formatCurrency, getMonthKey, getPreviousMonth, formatMonthYear } from "@/utils/formatters";
 import expenseService from "@/services/api/expenseService";
 import categoryService from "@/services/api/categoryService";
-
+import ApperIcon from "@/components/ApperIcon";
+import Button from "@/components/atoms/Button";
+import Card from "@/components/atoms/Card";
+import { toast } from "react-toastify";
 const { ApperClient } = window.ApperSDK;
 const apperClient = new ApperClient({
   apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
   apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
 });
 const Dashboard = () => {
-const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString());
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString());
   const [categories, setCategories] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [budgets, setBudgets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [previousMonthData, setPreviousMonthData] = useState([]);
+  const [aiSummary, setAiSummary] = useState(null);
+  const [generatingSummary, setGeneratingSummary] = useState(false);
+  const [summaryError, setSummaryError] = useState("");
+  const [apperClient, setApperClient] = useState(null);
+
+  useEffect(() => {
+    const { ApperClient } = window.ApperSDK;
+    const client = new ApperClient({
+      apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+      apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+    });
+    setApperClient(client);
+  }, []);
   const loadData = async () => {
     try {
       setLoading(true);
@@ -60,7 +76,65 @@ const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString());
 
 useEffect(() => {
     loadData();
+    setAiSummary(null);
+    setSummaryError("");
   }, [selectedMonth]);
+
+  const generateAISummary = async () => {
+    if (!apperClient) {
+      toast.error("ApperClient not initialized");
+      return;
+    }
+
+    if (expenses.length === 0) {
+      toast.info("No expenses to analyze for this period");
+      return;
+    }
+
+    try {
+      setGeneratingSummary(true);
+      setSummaryError("");
+      
+      const expensesWithCategories = expenses.map(exp => {
+        const category = categories.find(cat => cat.Id === exp.categoryId);
+        return {
+          ...exp,
+          categoryName: category?.name || 'Uncategorized'
+        };
+      });
+
+      const result = await apperClient.functions.invoke(
+        import.meta.env.VITE_ANALYZE_SPENDING,
+        {
+          body: JSON.stringify({
+            expenses: expensesWithCategories,
+            dateRange: formatMonthYear(selectedMonth),
+            categories: categories
+          }),
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (result.success === false) {
+        console.info(`apper_info: Got an error in this function: ${import.meta.env.VITE_ANALYZE_SPENDING}. The response body is: ${JSON.stringify(result)}.`);
+        setSummaryError(result.error || "Failed to generate AI summary");
+        toast.error(result.error || "Failed to generate AI summary");
+        return;
+      }
+
+      setAiSummary(result.summary);
+      toast.success("AI spending summary generated!");
+      
+    } catch (error) {
+      console.info(`apper_info: Got this error in this function: ${import.meta.env.VITE_ANALYZE_SPENDING}. The error is: ${error.message}`);
+      setSummaryError(error.message || "Failed to generate AI summary");
+      toast.error("Failed to generate AI summary");
+    } finally {
+      setGeneratingSummary(false);
+    }
+  };
 
   const loadPreviousMonth = async () => {
     try {
@@ -161,7 +235,7 @@ const chartData = budgets
 
   const previousMonthKey = getMonthKey(getPreviousMonth(selectedMonth));
   return (
-    <div className="min-h-screen bg-background">
+<div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -174,7 +248,18 @@ const chartData = budgets
             </h1>
             <p className="text-slate-600">Track your spending with ease</p>
           </div>
-          <MonthSelector value={selectedMonth} onChange={handleMonthChange} />
+          <div className="flex items-center gap-3">
+            <MonthSelector value={selectedMonth} onChange={handleMonthChange} />
+            <Button
+              onClick={generateAISummary}
+              disabled={generatingSummary || loading || expenses.length === 0}
+              variant="outline"
+              className="flex items-center gap-2 whitespace-nowrap"
+            >
+              <ApperIcon name="Sparkles" size={16} />
+              {generatingSummary ? "Analyzing..." : "AI Summary"}
+            </Button>
+          </div>
         </motion.div>
 
         <motion.div
@@ -210,6 +295,53 @@ const chartData = budgets
         >
           <ExpenseForm categories={categories} onSubmit={handleAddExpense} apperClient={apperClient} />
         </motion.div>
+
+        {aiSummary && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Card className="p-6 bg-gradient-to-br from-purple-50 to-blue-50 border-purple-200">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <ApperIcon name="Sparkles" size={20} className="text-purple-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-slate-900 mb-1">
+                    AI Spending Analysis
+                  </h3>
+                  <p className="text-sm text-slate-600">
+                    Powered by Claude AI • {formatMonthYear(selectedMonth)}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setAiSummary(null)}
+                  className="p-1 hover:bg-white/50 rounded transition-colors"
+                >
+                  <ApperIcon name="X" size={18} className="text-slate-500" />
+                </button>
+              </div>
+              <div className="prose prose-sm max-w-none text-slate-700 whitespace-pre-wrap">
+                {aiSummary}
+              </div>
+            </Card>
+          </motion.div>
+        )}
+
+        {summaryError && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <Card className="p-4 bg-red-50 border-red-200">
+              <div className="flex items-center gap-2 text-red-700">
+                <ApperIcon name="AlertCircle" size={18} />
+                <p className="text-sm font-medium">{summaryError}</p>
+              </div>
+            </Card>
+          </motion.div>
+        )}
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}

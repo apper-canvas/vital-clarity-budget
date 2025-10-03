@@ -53,9 +53,34 @@ const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString());
     }
   };
 
-  useEffect(() => {
+useEffect(() => {
     loadData();
   }, [selectedMonth]);
+
+  const loadPreviousMonth = async () => {
+    try {
+      const prevExpenses = await expenseService.getByMonth(previousMonthKey);
+      const prevData = categories.map(category => {
+        const categoryExpenses = prevExpenses.filter(
+          exp => exp.categoryId === category.Id
+        );
+        const spent = categoryExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+        return {
+          categoryId: category.Id,
+          spent,
+        };
+      });
+      setPreviousMonthData(prevData);
+    } catch (err) {
+      console.error("Failed to load previous month data:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (categories.length > 0) {
+      loadPreviousMonth();
+    }
+  }, [selectedMonth, categories]);
 
   const handleAddExpense = async (expenseData) => {
     await expenseService.create(expenseData);
@@ -127,34 +152,9 @@ const chartData = budgets
   const currentMonthData = budgets.map(b => ({
     categoryId: b.Id,
     spent: b.spent,
-  }));
+}));
 
   const previousMonthKey = getMonthKey(getPreviousMonth(selectedMonth));
-
-  useEffect(() => {
-    const loadPreviousMonth = async () => {
-      try {
-        const prevExpenses = await expenseService.getByMonth(previousMonthKey);
-        const prevData = categories.map(category => {
-          const categoryExpenses = prevExpenses.filter(
-            exp => exp.categoryId === category.Id
-          );
-          const spent = categoryExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-          return {
-            categoryId: category.Id,
-            spent,
-          };
-        });
-        setPreviousMonthData(prevData);
-      } catch (err) {
-        console.error("Failed to load previous month data:", err);
-      }
-    };
-
-    if (categories.length > 0) {
-      loadPreviousMonth();
-    }
-  }, [selectedMonth, categories, previousMonthKey]);
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto p-6 space-y-6">

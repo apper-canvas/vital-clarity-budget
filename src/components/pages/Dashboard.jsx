@@ -13,6 +13,11 @@ import { formatCurrency, getMonthKey, getPreviousMonth } from "@/utils/formatter
 import expenseService from "@/services/api/expenseService";
 import categoryService from "@/services/api/categoryService";
 
+const { ApperClient } = window.ApperSDK;
+const apperClient = new ApperClient({
+  apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+  apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+});
 const Dashboard = () => {
 const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString());
   const [categories, setCategories] = useState([]);
@@ -198,12 +203,12 @@ const chartData = budgets
           />
         </motion.div>
 
-        <motion.div
+<motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <ExpenseForm categories={categories} onSubmit={handleAddExpense} />
+          <ExpenseForm categories={categories} onSubmit={handleAddExpense} apperClient={apperClient} />
         </motion.div>
 
         <motion.div

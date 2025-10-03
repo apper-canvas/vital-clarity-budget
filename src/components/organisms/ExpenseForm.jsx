@@ -7,7 +7,7 @@ import Input from "@/components/atoms/Input";
 import Card from "@/components/atoms/Card";
 import Button from "@/components/atoms/Button";
 
-const ExpenseForm = ({ categories, onSubmit }) => {
+const ExpenseForm = ({ categories, onSubmit, apperClient }) => {
 const [formData, setFormData] = useState({
     amount: "",
     categoryId: categories.length > 0 ? categories[0].Id : "",
